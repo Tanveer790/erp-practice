@@ -1,43 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { salesInvoiceService } from "../../services/salesInvoiceService.js";
-import { customerService } from "../../services/customerService.js";
 import itemsRepo from "../../models/items/itemsRepo";
+import purchaseInvoiceService from "../../services/purchaseInvoiceService";
+import { newPurchaseInvoice, newPurchaseLine } from "../../models/purchaseInvoices/purchaseInvoiceModel";
+import supplierService from "../../services/supplierService";
 
 const toNum = (v) => {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 };
 
-const newLine = () => ({
-  id: crypto?.randomUUID?.() ?? String(Date.now()),
-  itemId: "", // ✅ item reference
-  description: "",
-  qty: 1,
-  price: 0,
-  discountPct: 0,
-  taxPct: 0,
-});
-
-export function useSalesInvoiceFormVM({ mode, id }) {
+export function usePurchaseInvoiceFormVM({ mode, id }) {
   const nav = useNavigate();
+  const isEdit = mode === "edit";
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  const [customers, setCustomers] = useState([]);
   const [items, setItems] = useState([]);
 
-  const [invoice, setInvoice] = useState({
-    id: null,
-    invoiceNo: "",
-    date: new Date().toISOString().slice(0, 10),
-    customerId: "",
-    customerName: "",
-    notes: "",
-    status: "DRAFT",
-    lines: [newLine()],
-  });
+  const [invoice, setInvoice] = useState(newPurchaseInvoice());
 
   const totals = useMemo(() => {
     let subTotal = 0;
@@ -46,11 +27,11 @@ export function useSalesInvoiceFormVM({ mode, id }) {
 
     for (const l of invoice.lines || []) {
       const qty = toNum(l.qty);
-      const price = toNum(l.price);
+      const cost = toNum(l.cost);
       const discPct = toNum(l.discountPct);
       const taxPct = toNum(l.taxPct);
 
-      const base = qty * price;
+      const base = qty * cost;
       const disc = base * (discPct / 100);
       const afterDisc = base - disc;
       const tax = afterDisc * (taxPct / 100);
@@ -68,51 +49,44 @@ export function useSalesInvoiceFormVM({ mode, id }) {
     };
   }, [invoice.lines]);
 
+  const [suppliers, setSuppliers] = useState([]);
+
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
-        const cust = await customerService.list();
-        setCustomers(cust);
+        setSuppliers((await supplierService.list()).filter(s => s.status === "ACTIVE"));
+        setItems(itemsRepo.list().filter((i) => i.status === "ACTIVE"));
 
-        // ✅ Items list (ACTIVE only)
-        const itemsList = itemsRepo.list().filter((i) => i.status === "ACTIVE");
-        setItems(itemsList);
-
-        if (mode === "edit" && id) {
-          const inv = await salesInvoiceService.getById(id);
+        if (isEdit && id) {
+          const inv = await purchaseInvoiceService.getById(id);
           if (inv) {
-            // Ensure lines exist
             setInvoice({
               ...inv,
-              lines: inv.lines?.length ? inv.lines : [newLine()],
+              lines: inv.lines?.length ? inv.lines : [newPurchaseLine()],
             });
           }
+        } else {
+          // create mode: generate invoice no
+          const nextNo = await purchaseInvoiceService.nextInvoiceNo();
+          setInvoice((p) => ({ ...p, invoiceNo: nextNo }));
         }
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [mode, id]);
+  }, [isEdit, id]);
 
   const setField = (name, value) => setInvoice((p) => ({ ...p, [name]: value }));
 
-  const setCustomer = (customerId) => {
-    const c = customers.find((x) => String(x.id) === String(customerId));
-    setInvoice((p) => ({
-      ...p,
-      customerId,
-      customerName: c?.name || c?.customerName || "",
-    }));
-  };
-
-  const addLine = () => setInvoice((p) => ({ ...p, lines: [...p.lines, newLine()] }));
+  const addLine = () => setInvoice((p) => ({ ...p, lines: [...p.lines, newPurchaseLine()] }));
 
   const removeLine = (lineId) => {
     setInvoice((p) => {
       const next = (p.lines || []).filter((l) => l.id !== lineId);
-      return { ...p, lines: next.length ? next : [newLine()] };
+      return { ...p, lines: next.length ? next : [newPurchaseLine()] };
     });
   };
 
@@ -123,27 +97,26 @@ export function useSalesInvoiceFormVM({ mode, id }) {
     }));
   };
 
-  // ✅ Item selection: auto-fill desc/price/tax
+  // item select: auto fill desc + cost + tax
   const setLineItem = (lineId, itemId) => {
     if (!itemId) {
       updateLine(lineId, { itemId: "", description: "" });
       return;
     }
-
     const item = itemsRepo.getById(itemId);
     if (!item) return;
 
     updateLine(lineId, {
       itemId: item.id,
       description: `${item.code} - ${item.name}`,
-      price: toNum(item.price),
+      cost: toNum(item.price),          // (for now using item.price as cost)
       taxPct: toNum(item.taxRate),
     });
   };
 
   const saveDraft = async () => {
-    if (!invoice.customerId) {
-      alert("Please select a customer");
+    if (!String(invoice.supplierName || "").trim()) {
+      alert("Please enter supplier name");
       return;
     }
 
@@ -156,50 +129,37 @@ export function useSalesInvoiceFormVM({ mode, id }) {
         status: "DRAFT",
       };
 
-      if (payload.id) await salesInvoiceService.update(payload);
-      else await salesInvoiceService.create(payload);
+      if (payload.id && isEdit) await purchaseInvoiceService.update(payload);
+      else await purchaseInvoiceService.create(payload);
 
-      nav("/sales-invoices");
+      nav("/purchase-invoices");
     } finally {
       setSaving(false);
     }
   };
 
   const postInvoice = async () => {
-  if (!invoice.customerId) {
-    alert("Please select a customer");
+  if (!String(invoice.supplierId || "").trim() && !String(invoice.supplierName || "").trim()) {
+    alert("Please select supplier");
     return;
   }
 
+  // prevent double posting
   if (invoice.status === "POSTED") {
     alert("Already posted");
     return;
   }
 
-  // ✅ Stock validation (no negative)
-  for (const l of invoice.lines || []) {
-    const qty = Number(l.qty || 0);
-    if (!l.itemId || qty <= 0) continue;
-
-    const item = itemsRepo.getById(l.itemId);
-    const current = Number(item?.stockQty || 0);
-
-    if (current - qty < 0) {
-      alert(`Not enough stock for ${item?.code} - ${item?.name}. Available: ${current}`);
-      return;
-    }
-  }
-
   setSaving(true);
   try {
-    // 1) Decrease stock
+    // 1) Increase stock for each line
     for (const l of invoice.lines || []) {
       const qty = Number(l.qty || 0);
       if (!l.itemId || qty <= 0) continue;
-      itemsRepo.adjustStock(l.itemId, -qty); // ✅ -qty
+      itemsRepo.adjustStock(l.itemId, qty); // ✅ +qty
     }
 
-    // 2) Save as POSTED
+    // 2) Save invoice as POSTED
     const payload = {
       ...invoice,
       totals,
@@ -208,10 +168,10 @@ export function useSalesInvoiceFormVM({ mode, id }) {
       postedAt: new Date().toISOString(),
     };
 
-    if (payload.id) await salesInvoiceService.update(payload);
-    else await salesInvoiceService.create(payload);
+    if (payload.id && isEdit) await purchaseInvoiceService.update(payload);
+    else await purchaseInvoiceService.create(payload);
 
-    nav("/sales-invoices");
+    nav("/purchase-invoices");
   } finally {
     setSaving(false);
   }
@@ -221,18 +181,17 @@ export function useSalesInvoiceFormVM({ mode, id }) {
   return {
     loading,
     saving,
-    customers,
-    items, // ✅ expose items to UI
+    suppliers,
+    items,
     invoice,
     totals,
     setField,
-    setCustomer,
+    postInvoice,
     addLine,
     removeLine,
     updateLine,
-    postInvoice,
-    setLineItem, // ✅ expose handler
+    setLineItem,
     saveDraft,
-    goBack: () => nav("/sales-invoices"),
+    goBack: () => nav("/purchase-invoices"),
   };
 }

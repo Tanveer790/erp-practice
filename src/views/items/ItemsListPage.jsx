@@ -43,9 +43,7 @@ export default function ItemsListPage() {
   const onDeactivate = (row) => {
     if (!row?.id || row.status === ItemStatus.INACTIVE) return;
 
-    const ok = window.confirm(
-      `Deactivate item "${row.code} - ${row.name}"?`
-    );
+    const ok = window.confirm(`Deactivate item "${row.code} - ${row.name}"?`);
     if (!ok) return;
 
     itemsRepo.update(row.id, { status: ItemStatus.INACTIVE });
@@ -114,6 +112,7 @@ export default function ItemsListPage() {
               <TableCell>UOM</TableCell>
               <TableCell align="right">Price</TableCell>
               <TableCell align="right">Tax %</TableCell>
+              <TableCell align="right">Stock</TableCell>
               <TableCell>Status</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
@@ -122,39 +121,43 @@ export default function ItemsListPage() {
           <TableBody>
             {vm.loading ? (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                   <CircularProgress size={24} />
                 </TableCell>
               </TableRow>
             ) : vm.rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                  <Typography color="text.secondary">
-                    No items found
-                  </Typography>
+                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                  <Typography color="text.secondary">No items found</Typography>
                 </TableCell>
               </TableRow>
             ) : (
               vm.rows.map((r) => (
                 <TableRow key={r.id} hover>
-                  <TableCell sx={{ fontWeight: 600 }}>
-                    {r.code}
-                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{r.code}</TableCell>
                   <TableCell>{r.name}</TableCell>
                   <TableCell>{r.uom}</TableCell>
+
                   <TableCell align="right">
                     {Number(r.price || 0).toFixed(2)}
                   </TableCell>
+
                   <TableCell align="right">
                     {Number(r.taxRate ?? 0).toFixed(2)}
                   </TableCell>
+
+                  <TableCell align="right">
+                    {Number(r.stockQty || 0).toFixed(2)}
+                  </TableCell>
+
                   <TableCell>
                     <Chip
                       size="small"
-                      label={statusLabel[r.status]}
+                      label={statusLabel[r.status] ?? r.status ?? "-"}
                       variant="outlined"
                     />
                   </TableCell>
+
                   <TableCell align="right">
                     <IconButton
                       size="small"

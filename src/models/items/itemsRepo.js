@@ -40,10 +40,30 @@ const itemsRepo = {
     return rows[idx];
   },
 
+  adjustStock(itemId, deltaQty) {
+  const rows = read();
+  const idx = rows.findIndex(x => String(x.id) === String(itemId));
+  if (idx === -1) return null;
+
+  const current = Number(rows[idx].stockQty || 0);
+  const next = current + Number(deltaQty || 0);
+
+  rows[idx] = {
+    ...rows[idx],
+    stockQty: next,
+    updatedAt: new Date().toISOString(),
+  };
+
+  write(rows);
+  return rows[idx];
+},
+
   remove(id) {
     write(read().filter((x) => x.id !== id));
     return true;
   },
 };
+
+
 
 export default itemsRepo;

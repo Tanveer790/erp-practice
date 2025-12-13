@@ -8,6 +8,7 @@ function createEmptyItem() {
     id: crypto?.randomUUID?.() ?? Date.now().toString(),
     code: "",
     name: "",
+    stockQty: 0,
     uom: "PCS",
     price: 0,
     taxRate: 15,

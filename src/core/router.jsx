@@ -8,6 +8,12 @@ import SalesInvoiceListPage from "../views/salesInvoices/SalesInvoiceListPage.js
 import SalesInvoiceFormPage from "../views/salesInvoices/SalesInvoiceFormPage.jsx";
 import ItemsListPage from "../views/items/ItemsListPage.jsx";
 import ItemFormPage from "../views/items/ItemFormPage.jsx";
+import PurchaseInvoiceListPage from "../views/purchaseInvoices/PurchaseInvoiceListPage.jsx";
+import PurchaseInvoiceFormPage from "../views/purchaseInvoices/PurchaseInvoiceFormPage.jsx";
+import SuppliersListPage from "../views/suppliers/SuppliersListPage.jsx";
+import SupplierFormPage from "../views/suppliers/SupplierFormPage.jsx";
+
+
 
 export default function AppRouter() {
   return (
@@ -44,6 +50,13 @@ export default function AppRouter() {
             path="items/:id/edit"
             element={<ItemFormPage mode="edit" />}
           />
+          <Route path="purchase-invoices" element={<PurchaseInvoiceListPage />} />
+          <Route path="purchase-invoices/new" element={<PurchaseInvoiceFormPage mode="create" />} />
+          <Route path="purchase-invoices/:id" element={<PurchaseInvoiceFormPage mode="edit" />} />
+
+          <Route path="suppliers" element={<SuppliersListPage />} />
+          <Route path="suppliers/new" element={<SupplierFormPage mode="create" />} />
+          <Route path="suppliers/:id/edit" element={<SupplierFormPage mode="edit" />} />  
         </Route>
 
         {/* keep this LAST */}

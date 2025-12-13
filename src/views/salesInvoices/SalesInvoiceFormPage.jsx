@@ -102,58 +102,85 @@ export default function SalesInvoiceFormPage({ mode }) {
 
           <Stack spacing={2}>
             {vm.invoice.lines.map((l) => (
-              <Box
-                key={l.id}
-                sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2 }}
-              >
-                <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="center">
-                  <TextField
-                    label="Description"
-                    value={l.description ?? ""}
-                    onChange={(e) => vm.updateLine(l.id, { description: e.target.value })}  // ✅ FIX
-                    fullWidth
-                  />
+  <Box
+    key={l.id}
+    sx={{
+      border: "1px solid",
+      borderColor: "divider",
+      borderRadius: 2,
+      p: 2,
+    }}
+  >
+    <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="center">
+      {/* ✅ Item */}
+      <TextField
+        select
+        label="Item"
+        value={l.itemId ?? ""}
+        onChange={(e) => vm.setLineItem(l.id, e.target.value)}
+        sx={{ minWidth: 100 }}
+      >
+        <MenuItem value="">
+          <em>Select item...</em>
+        </MenuItem>
 
-                  <TextField
-                    label="Qty"
-                    type="number"
-                    value={l.qty ?? 0}
-                    onChange={(e) => vm.updateLine(l.id, { qty: Number(e.target.value || 0) })} // ✅ number
-                    sx={{ width: 120 }}
-                  />
+        {vm.items.map((it) => (
+          <MenuItem key={it.id} value={it.id}>
+            {it.code} - {it.name}
+          </MenuItem>
+        ))}
+      </TextField>
 
-                  <TextField
-                    label="Price"
-                    type="number"
-                    value={l.price ?? 0}
-                    onChange={(e) => vm.updateLine(l.id, { price: Number(e.target.value || 0) })} // ✅ number
-                    sx={{ width: 140 }}
-                  />
+      {/* Description (editable) */}
+      <TextField
+        label="Description"
+        value={l.description ?? ""}
+        onChange={(e) => vm.updateLine(l.id, { description: e.target.value })}
+        fullWidth
+      />
 
-                  <TextField
-                    label="Disc %"
-                    type="number"
-                    value={l.discountPct ?? 0}
-                    onChange={(e) =>
-                      vm.updateLine(l.id, { discountPct: Number(e.target.value || 0) })
-                    }
-                    sx={{ width: 120 }}
-                  />
+      <TextField
+        label="Qty"
+        type="number"
+        value={l.qty ?? 1}
+        onChange={(e) => vm.updateLine(l.id, { qty: Number(e.target.value || 0) })}
+        sx={{ width: 120 }}
+      />
 
-                  <TextField
-                    label="Tax %"
-                    type="number"
-                    value={l.taxPct ?? 0}
-                    onChange={(e) => vm.updateLine(l.id, { taxPct: Number(e.target.value || 0) })}
-                    sx={{ width: 120 }}
-                  />
+      <TextField
+        label="Price"
+        type="number"
+        value={l.price ?? 0}
+        onChange={(e) => vm.updateLine(l.id, { price: Number(e.target.value || 0) })}
+        sx={{ width: 140 }}
+      />
 
-                  <IconButton onClick={() => vm.removeLine(l.id)} disabled={vm.invoice.lines.length === 1}>
-                    <DeleteIcon />
-                  </IconButton>
-                </Stack>
-              </Box>
-            ))}
+      <TextField
+        label="Disc %"
+        type="number"
+        value={l.discountPct ?? 0}
+        onChange={(e) => vm.updateLine(l.id, { discountPct: Number(e.target.value || 0) })}
+        sx={{ width: 120 }}
+      />
+
+      <TextField
+        label="Tax %"
+        type="number"
+        value={l.taxPct ?? 0}
+        onChange={(e) => vm.updateLine(l.id, { taxPct: Number(e.target.value || 0) })}
+        sx={{ width: 120 }}
+      />
+
+      <IconButton
+        onClick={() => vm.removeLine(l.id)}
+        disabled={vm.invoice.lines.length === 1}
+      >
+        <DeleteIcon />
+      </IconButton>
+    </Stack>
+  </Box>
+))}
+
           </Stack>
 
           <Divider sx={{ my: 2 }} />

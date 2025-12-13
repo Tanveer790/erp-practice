@@ -15,8 +15,12 @@ const drawerWidth = 200;
 const navItems = [
   { label: "Dashboard", to: "/", end: true }, 
   { label: "Customers", to: "/customers" },
+  { label: "Suppliers", to: "/suppliers" },
   { label: "Sales Invoices", to: "/sales-invoices" },
+  { label: "Purchase Invoices", to: "/purchase-invoices" },
   { label: "Items", to: "/items" },
+  
+
 ];
 
 export default function Sidebar() {
