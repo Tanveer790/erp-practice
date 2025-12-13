@@ -1,7 +1,23 @@
-import { Box, Button, Card, CardContent, Chip, MenuItem, Stack, TextField, Typography } from "@mui/material"
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  MenuItem,
+  Stack,
+  TextField,
+  Typography,
+  IconButton,
+  Tooltip,
+} from "@mui/material"
 import { DataGrid } from "@mui/x-data-grid"
 import { useNavigate } from "react-router-dom"
 import { useSalesInvoiceListVM } from "../../viewmodels/salesInvoices/useSalesInvoiceListVM"
+
+import EditIcon from "@mui/icons-material/Edit"
+import CheckCircleIcon from "@mui/icons-material/CheckCircle"
+import BlockIcon from "@mui/icons-material/Block"
 
 const statusChip = (status) => {
   if (status === "POSTED") return <Chip size="small" label="Posted" />
@@ -25,10 +41,49 @@ export default function SalesInvoiceListPage() {
     },
     {
       field: "grandTotal",
-      headerName: "Total",
-      width: 130,
-      valueGetter: (p) => p.row?.totals?.grandTotal ?? 0,
-      valueFormatter: (p) => Number(p.value ?? 0).toFixed(2),
+      headerName: "Total Invoice",
+      width: 140,
+      renderCell: (p) => Number(p?.row?.grandTotal ?? 0).toFixed(2),
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: 160,
+      sortable: false,
+      filterable: false,
+      renderCell: (p) => (
+        <Stack direction="row" spacing={1}>
+          <Tooltip title="Edit">
+            <IconButton size="small" onClick={() => nav(`${p.row.id}`)}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Post">
+            <span>
+              <IconButton
+                size="small"
+                onClick={() => vm.post(p.row.id)}
+                disabled={p.row.status !== "DRAFT"}
+              >
+                <CheckCircleIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+
+          <Tooltip title="Cancel">
+            <span>
+              <IconButton
+                size="small"
+                onClick={() => vm.cancel(p.row.id)}
+                disabled={p.row.status === "CANCELLED"}
+              >
+                <BlockIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Stack>
+      ),
     },
   ]
 
@@ -36,8 +91,6 @@ export default function SalesInvoiceListPage() {
     <Box>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Sales Invoices</Typography>
-
-        {/* ✅ nested route: use relative navigation */}
         <Button variant="contained" onClick={() => nav("new")}>
           New Invoice
         </Button>
@@ -73,7 +126,7 @@ export default function SalesInvoiceListPage() {
               loading={vm.loading}
               getRowId={(r) => r.id}
               pageSizeOptions={[10, 25, 50]}
-              onRowDoubleClick={(p) => nav(`${p.row.id}`)}  // ✅ relative
+              onRowDoubleClick={(p) => nav(`${p.row.id}`)}
             />
           </div>
         </CardContent>
