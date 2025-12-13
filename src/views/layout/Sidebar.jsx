@@ -13,9 +13,10 @@ import { appConfig } from "../../core/config.js";
 const drawerWidth = 200;
 
 const navItems = [
-  { label: "Dashboard", to: "/", end: true }, // 👈 important
+  { label: "Dashboard", to: "/", end: true }, 
   { label: "Customers", to: "/customers" },
   { label: "Sales Invoices", to: "/sales-invoices" },
+  { label: "Items", to: "/items" },
 ];
 
 export default function Sidebar() {
@@ -43,7 +44,7 @@ export default function Sidebar() {
               key={item.to}
               component={NavLink}
               to={item.to}
-              end={item.end}   // 👈 FIX
+              end={item.end}   
               sx={{
                 "&.active": {
                   backgroundColor: "action.selected",

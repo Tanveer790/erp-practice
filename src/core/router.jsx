@@ -6,7 +6,8 @@ import { ProtectedRoute } from "../components/common/ProtectedRoute.jsx";
 import CustomersListView from "../views/customers/CustomersListView.jsx";
 import SalesInvoiceListPage from "../views/salesInvoices/SalesInvoiceListPage.jsx";
 import SalesInvoiceFormPage from "../views/salesInvoices/SalesInvoiceFormPage.jsx";
-
+import ItemsListPage from "../views/items/ItemsListPage.jsx";
+import ItemFormPage from "../views/items/ItemFormPage.jsx";
 
 export default function AppRouter() {
   return (
@@ -25,7 +26,7 @@ export default function AppRouter() {
           <Route index element={<DashboardView />} />
           <Route path="customers" element={<CustomersListView />} />
 
-          {/* ✅ sales invoices (relative paths because they are nested) */}
+          {/* Sales Invoices */}
           <Route path="sales-invoices" element={<SalesInvoiceListPage />} />
           <Route
             path="sales-invoices/new"
@@ -35,8 +36,17 @@ export default function AppRouter() {
             path="sales-invoices/:id"
             element={<SalesInvoiceFormPage mode="edit" />}
           />
+
+          {/* ✅ Items (NOW protected + layout) */}
+          <Route path="items" element={<ItemsListPage />} />
+          <Route path="items/new" element={<ItemFormPage mode="create" />} />
+          <Route
+            path="items/:id/edit"
+            element={<ItemFormPage mode="edit" />}
+          />
         </Route>
 
+        {/* keep this LAST */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
