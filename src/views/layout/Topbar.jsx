@@ -1,6 +1,6 @@
-import { AppBar, Box, IconButton, Toolbar, Typography } from '@mui/material';
-import LogoutIcon from '@mui/icons-material/Logout';
-import { useAuthContext } from '../../core/AuthContext.jsx';
+import { AppBar, Box, IconButton, Toolbar, Typography } from "@mui/material";
+import LogoutIcon from "@mui/icons-material/Logout";
+import { useAuthContext } from "../../core/AuthContext.jsx";
 
 export default function Topbar() {
   const { user, logout } = useAuthContext();
@@ -12,13 +12,14 @@ export default function Topbar() {
       elevation={0}
       sx={{
         borderBottom: 1,
-        borderColor: 'divider',
-        ml: `${220}px`,
+        borderColor: "divider",
+        width: "100%",        // optional, safe
+        zIndex: (theme) => theme.zIndex.drawer + 1,
       }}
     >
-      <Toolbar sx={{ justifyContent: 'space-between' }}>
+      <Toolbar sx={{ justifyContent: "space-between" }}>
         <Typography variant="subtitle1">
-          Welcome, <strong>{user?.name || 'User'}</strong>
+          Welcome, <strong>{user?.name || "User"}</strong>
         </Typography>
 
         <Box>

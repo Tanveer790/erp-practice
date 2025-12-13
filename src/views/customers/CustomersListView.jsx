@@ -20,10 +20,19 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import { useCustomersViewModel } from '../../viewmodels/customers/useCustomersViewModel.js';
+import { CustomerFormDialog } from './CustomerFormDialog.jsx';
+import EditIcon from '@mui/icons-material/Edit';
+import BlockIcon from '@mui/icons-material/Block';
+
+
 
 export default function CustomersListView() {
-  const { customers, loading, error, reload } = useCustomersViewModel();
+  const { customers, loading, error, reload, addCustomer, updateCustomer, deactivateCustomer } =
+  useCustomersViewModel();
+
+
   const [search, setSearch] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const filteredCustomers = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -39,9 +48,36 @@ export default function CustomersListView() {
     });
   }, [customers, search]);
 
+  const handleAddCustomer = (values) => {
+    addCustomer(values);
+    setDialogOpen(false);
+  };
+
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+
+  const openAdd = () => {
+  setSelectedCustomer(null);
+  setDialogOpen(true);
+};
+
+const openEdit = (customer) => {
+  setSelectedCustomer(customer);
+  setDialogOpen(true);
+};
+
+const handleSave = (values) => {
+  if (selectedCustomer?.id) {
+    updateCustomer(selectedCustomer.id, values);
+  } else {
+    addCustomer(values);
+  }
+  setDialogOpen(false);
+};
+
+
   return (
     <Box>
-      {/* Page header (left aligned, thoda hi margin) */}
+      {/* Page header */}
       <Box sx={{ mb: 1 }}>
         <Typography variant="h5" fontWeight={600}>
           Customers
@@ -128,11 +164,12 @@ export default function CustomersListView() {
             </IconButton>
 
             <Button
-              startIcon={<AddIcon />}
-              sx={{ borderRadius: 999, px: 2.5, whiteSpace: 'nowrap' }}
-            >
-              New Customer
-            </Button>
+  startIcon={<AddIcon />}
+  onClick={openAdd}
+>
+  New Customer
+</Button>
+
           </Stack>
         </Toolbar>
 
@@ -149,6 +186,8 @@ export default function CustomersListView() {
                 <TableCell>Email</TableCell>
                 <TableCell>City</TableCell>
                 <TableCell>Status</TableCell>
+                <TableCell align="right">Actions</TableCell>
+
               </TableRow>
             </TableHead>
 
@@ -160,12 +199,14 @@ export default function CustomersListView() {
                   sx={{
                     '&:last-child td, &:last-child th': { border: 0 },
                   }}
+                  
                 >
                   <TableCell>{index + 1}</TableCell>
                   <TableCell sx={{ fontWeight: 500 }}>{c.name}</TableCell>
                   <TableCell>{c.phone}</TableCell>
                   <TableCell>{c.email}</TableCell>
                   <TableCell>{c.city}</TableCell>
+                  <TableCell>{c.isActive ? 'Active' : 'Inactive'}</TableCell>
                   <TableCell>
                     <Chip
                       label={c.isActive ? 'Active' : 'Inactive'}
@@ -174,7 +215,20 @@ export default function CustomersListView() {
                       variant={c.isActive ? 'filled' : 'outlined'}
                     />
                   </TableCell>
+                  <TableCell align="right">
+    <IconButton size="small" onClick={() => openEdit(c)}>
+      <EditIcon fontSize="small" />
+    </IconButton>
+    <IconButton
+      size="small"
+      onClick={() => deactivateCustomer(c.id)}
+      disabled={!c.isActive}
+    >
+      <BlockIcon fontSize="small" />
+    </IconButton>
+  </TableCell>
                 </TableRow>
+                
               ))}
 
               {!loading && filteredCustomers.length === 0 && (
@@ -220,6 +274,15 @@ export default function CustomersListView() {
           </Box>
         )}
       </Paper>
+
+      {/* Add Customer Dialog */}
+      <CustomerFormDialog
+  open={dialogOpen}
+  onClose={() => setDialogOpen(false)}
+  onSubmit={handleSave}
+  initialValues={selectedCustomer}
+/>
+
     </Box>
   );
 }

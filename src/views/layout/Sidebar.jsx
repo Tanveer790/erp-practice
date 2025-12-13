@@ -6,17 +6,16 @@ import {
   ListItemText,
   Toolbar,
   Typography,
-} from '@mui/material';
-import { NavLink } from 'react-router-dom';
-import { appConfig } from '../../core/config.js';
+} from "@mui/material";
+import { NavLink } from "react-router-dom";
+import { appConfig } from "../../core/config.js";
 
-
-
-const drawerWidth = 220;
+const drawerWidth = 200;
 
 const navItems = [
-  { label: 'Dashboard', to: '/' },
-  { label: 'Customers', to: '/customers' }, // future module
+  { label: "Dashboard", to: "/", end: true }, // 👈 important
+  { label: "Customers", to: "/customers" },
+  { label: "Sales Invoices", to: "/sales-invoices" },
 ];
 
 export default function Sidebar() {
@@ -27,7 +26,7 @@ export default function Sidebar() {
         width: drawerWidth,
         [`& .MuiDrawer-paper`]: {
           width: drawerWidth,
-          boxSizing: 'border-box',
+          boxSizing: "border-box",
         },
       }}
     >
@@ -36,16 +35,18 @@ export default function Sidebar() {
           {appConfig.appName}
         </Typography>
       </Toolbar>
-      <Box sx={{ overflow: 'auto' }}>
+
+      <Box sx={{ overflow: "auto" }}>
         <List>
           {navItems.map((item) => (
             <ListItemButton
               key={item.to}
               component={NavLink}
               to={item.to}
+              end={item.end}   // 👈 FIX
               sx={{
-                '&.active': {
-                  backgroundColor: 'action.selected',
+                "&.active": {
+                  backgroundColor: "action.selected",
                 },
               }}
             >
