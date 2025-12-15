@@ -7,6 +7,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer, // Use TableContainer for better scrolling
   TableHead,
   TableRow,
   Toolbar,
@@ -15,25 +16,43 @@ import {
   Stack,
   Chip,
   Divider,
+  CircularProgress, // Added for better loading state
+  Tooltip, // Added for action icons
+  useTheme,
+  alpha,
 } from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import AddIcon from '@mui/icons-material/Add';
-import SearchIcon from '@mui/icons-material/Search';
-import { useCustomersViewModel } from '../../viewmodels/customers/useCustomersViewModel.js';
-import { CustomerFormDialog } from './CustomerFormDialog.jsx';
-import EditIcon from '@mui/icons-material/Edit';
-import BlockIcon from '@mui/icons-material/Block';
+import RefreshIcon from '@mui/icons-material/RefreshRounded';
+import AddIcon from '@mui/icons-material/AddRounded';
+import SearchIcon from '@mui/icons-material/SearchRounded';
+import EditIcon from '@mui/icons-material/EditRounded';
+import BlockIcon from '@mui/icons-material/BlockRounded';
+import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
+import { useCustomersViewModel } from '../../viewmodels/customers/useCustomersViewModel.js'; // Ensure path is correct
+import { CustomerFormDialog } from './CustomerFormDialog.jsx'; // Ensure path is correct
 
+// Define Table Headers for clarity
+const TABLE_HEADS = [
+  'ID',
+  'Name',
+  'Contact Info',
+  'Location',
+  'Status',
+  'Actions',
+];
 
 
 export default function CustomersListView() {
+  const theme = useTheme();
   const { customers, loading, error, reload, addCustomer, updateCustomer, deactivateCustomer } =
-  useCustomersViewModel();
+    useCustomersViewModel();
 
 
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
 
+  // --- Filtering Logic (kept as is, but memoized) ---
   const filteredCustomers = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return customers;
@@ -48,97 +67,141 @@ export default function CustomersListView() {
     });
   }, [customers, search]);
 
-  const handleAddCustomer = (values) => {
-    addCustomer(values);
+  // --- Handlers ---
+  const openAdd = () => {
+    setSelectedCustomer(null);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (customer) => {
+    setSelectedCustomer(customer);
+    setDialogOpen(true);
+  };
+
+  const handleSave = (values) => {
+    if (selectedCustomer?.id) {
+      updateCustomer(selectedCustomer.id, values);
+    } else {
+      addCustomer(values);
+    }
     setDialogOpen(false);
   };
 
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const handleDeactivate = (id) => {
+    if (window.confirm("Are you sure you want to deactivate this customer?")) {
+        deactivateCustomer(id);
+    }
+  };
 
-  const openAdd = () => {
-  setSelectedCustomer(null);
-  setDialogOpen(true);
-};
 
-const openEdit = (customer) => {
-  setSelectedCustomer(customer);
-  setDialogOpen(true);
-};
+  // --- Render Functions ---
 
-const handleSave = (values) => {
-  if (selectedCustomer?.id) {
-    updateCustomer(selectedCustomer.id, values);
-  } else {
-    addCustomer(values);
-  }
-  setDialogOpen(false);
-};
-
+  const renderStatusChip = (isActive) => (
+    <Chip
+      label={isActive ? 'Active' : 'Inactive'}
+      size="small"
+      icon={isActive ? <CheckCircleRoundedIcon fontSize="small" /> : <CancelRoundedIcon fontSize="small" />}
+      color={isActive ? 'success' : 'default'}
+      variant={isActive ? 'filled' : 'outlined'}
+      sx={{ 
+        fontWeight: 600, 
+        backgroundColor: isActive 
+            ? alpha(theme.palette.success.main, 0.1) 
+            : alpha(theme.palette.grey[500], 0.1),
+        color: isActive ? theme.palette.success.dark : theme.palette.text.secondary
+      }}
+    />
+  );
+  
+  const renderActions = (customer) => (
+    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+      <Tooltip title="Edit Customer Details">
+        <IconButton size="small" onClick={() => openEdit(customer)} color="primary">
+          <EditIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title={customer.isActive ? "Deactivate Customer" : "Customer is already inactive"}>
+        <IconButton
+          size="small"
+          onClick={() => handleDeactivate(customer.id)}
+          disabled={!customer.isActive}
+          color="error"
+        >
+          <BlockIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+    </Stack>
+  );
 
   return (
     <Box>
       {/* Page header */}
-      <Box sx={{ mb: 1 }}>
-        <Typography variant="h5" fontWeight={600}>
-          Customers
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" fontWeight={700}>
+          Customer Master
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Manage your Tan-ERP customer master data.
+        <Typography variant="body1" color="text.secondary">
+          Manage your Tan-ERP customer master data and contact information.
         </Typography>
       </Box>
 
       <Paper
-        elevation={1}
+        elevation={4} // Increased elevation for depth
         sx={{
-          mt: 1,
-          borderRadius: 2,
+          borderRadius: 3, // More rounded corners
           overflow: 'hidden',
           backgroundColor: 'background.paper',
         }}
       >
-        {/* Top toolbar inside card */}
+        {/* TOP TOOLBAR: Actions & Search */}
         <Toolbar
           sx={{
-            px: 2,
-            py: 1,
+            px: 3, // Increased padding
+            py: 1.5,
             display: 'flex',
-            gap: 1.5,
             alignItems: 'center',
             justifyContent: 'space-between',
+            minHeight: 64,
           }}
         >
+          {/* Left Side: Title and Count */}
           <Stack direction="row" spacing={2} alignItems="center">
-            <Typography variant="subtitle1" fontWeight={600}>
+            <Typography variant="h6" fontWeight={700}>
               Customer List
             </Typography>
             <Chip
               label={`${customers.length} total`}
-              size="small"
-              color="primary"
-              variant="outlined"
+              size="medium" // Slightly larger chip
+              color="info"
+              variant="soft" // Use 'soft' variant if available in your theme, otherwise 'outlined'
             />
           </Stack>
 
+          {/* Right Side: Search and Buttons */}
           <Stack
             direction="row"
-            spacing={1.5}
+            spacing={2}
             alignItems="center"
-            sx={{ minWidth: 0, flexShrink: 0 }}
           >
+            {/* Search Input (Replaced TextField with a cleaner Box wrapper) */}
             <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1,
-                backgroundColor: 'background.default',
-                px: 1.5,
-                py: 0.5,
+                backgroundColor: theme.palette.grey[100],
+                px: 2,
+                py: 0.8,
                 borderRadius: 999,
-                border: (theme) => `1px solid ${theme.palette.divider}`,
-                width: 320,
+                width: 350,
+                border: '1px solid transparent',
+                '&:focus-within': {
+                    borderColor: theme.palette.primary.main,
+                    backgroundColor: 'background.paper',
+                }
               }}
             >
-              <SearchIcon fontSize="small" />
+              <SearchIcon fontSize="small" color="action" />
               <TextField
                 variant="standard"
                 placeholder="Search by name, phone, email..."
@@ -147,93 +210,110 @@ const handleSave = (values) => {
                 fullWidth
                 InputProps={{
                   disableUnderline: true,
+                  sx: { fontSize: '0.9rem' }
                 }}
                 size="small"
               />
             </Box>
 
-            <IconButton
-              onClick={reload}
-              disabled={loading}
-              sx={{
-                borderRadius: 1.5,
-                border: (theme) => `1px solid ${theme.palette.divider}`,
-              }}
-            >
-              <RefreshIcon fontSize="small" />
-            </IconButton>
+            {/* Refresh Button */}
+            <Tooltip title="Reload Data">
+              <span>
+                <IconButton
+                  onClick={reload}
+                  disabled={loading}
+                  sx={{
+                    borderRadius: 1.5,
+                    border: `1px solid ${theme.palette.divider}`,
+                    '&:hover': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.05)
+                    }
+                  }}
+                >
+                  {loading ? <CircularProgress size={20} /> : <RefreshIcon fontSize="small" />}
+                </IconButton>
+              </span>
+            </Tooltip>
 
+            {/* Add Button */}
             <Button
-  startIcon={<AddIcon />}
-  onClick={openAdd}
->
-  New Customer
-</Button>
-
+              startIcon={<AddIcon />}
+              onClick={openAdd}
+              variant="contained"
+              disableElevation
+              sx={{ py: 1 }}
+            >
+              New Customer
+            </Button>
           </Stack>
         </Toolbar>
 
         <Divider />
 
         {/* Table area */}
-        <Box sx={{ width: '100%', overflowX: 'auto' }}>
-          <Table size="small">
+        <TableContainer sx={{ maxHeight: 600 }}> {/* Added max height for vertical scroll */}
+          <Table stickyHeader size="medium"> {/* Sticky header for better UX on long lists */}
             <TableHead>
-              <TableRow>
-                <TableCell sx={{ width: 60 }}>#</TableCell>
-                <TableCell>Name</TableCell>
-                <TableCell>Phone</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>City</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="right">Actions</TableCell>
-
+              <TableRow sx={{ '& th': { backgroundColor: theme.palette.grey[50], fontWeight: 700 } }}>
+                {TABLE_HEADS.map((head) => (
+                    <TableCell key={head} align={head === 'Actions' ? 'right' : 'left'}>
+                        {head}
+                    </TableCell>
+                ))}
               </TableRow>
             </TableHead>
 
             <TableBody>
-              {filteredCustomers.map((c, index) => (
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={TABLE_HEADS.length} sx={{ textAlign: 'center', py: 5 }}>
+                    <CircularProgress size={24} sx={{ mr: 1 }} />
+                    <Typography variant="body1" color="text.secondary">
+                      Loading customer data...
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+              {error && (
+                <TableRow>
+                  <TableCell colSpan={TABLE_HEADS.length} sx={{ textAlign: 'center', py: 5 }}>
+                    <Typography variant="body1" color="error">
+                      Error fetching data: {error}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {!loading && filteredCustomers.map((c, index) => (
                 <TableRow
                   key={c.id ?? index}
                   hover
                   sx={{
                     '&:last-child td, &:last-child th': { border: 0 },
+                    '&.MuiTableRow-hover:hover': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.05)
+                    }
                   }}
-                  
                 >
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell sx={{ fontWeight: 500 }}>{c.name}</TableCell>
-                  <TableCell>{c.phone}</TableCell>
-                  <TableCell>{c.email}</TableCell>
-                  <TableCell>{c.city}</TableCell>
-                  <TableCell>{c.isActive ? 'Active' : 'Inactive'}</TableCell>
+                  <TableCell sx={{ width: 60, fontWeight: 600 }}>{c.id || index + 1}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: theme.palette.text.primary }}>{c.name}</TableCell>
                   <TableCell>
-                    <Chip
-                      label={c.isActive ? 'Active' : 'Inactive'}
-                      size="small"
-                      color={c.isActive ? 'success' : 'default'}
-                      variant={c.isActive ? 'filled' : 'outlined'}
-                    />
+                    <Stack>
+                        <Typography variant="body2">{c.phone}</Typography>
+                        <Typography variant="caption" color="text.secondary">{c.email}</Typography>
+                    </Stack>
                   </TableCell>
+                  <TableCell>{c.city}</TableCell>
+                  <TableCell>{renderStatusChip(c.isActive)}</TableCell>
                   <TableCell align="right">
-    <IconButton size="small" onClick={() => openEdit(c)}>
-      <EditIcon fontSize="small" />
-    </IconButton>
-    <IconButton
-      size="small"
-      onClick={() => deactivateCustomer(c.id)}
-      disabled={!c.isActive}
-    >
-      <BlockIcon fontSize="small" />
-    </IconButton>
-  </TableCell>
+                    {renderActions(c)}
+                  </TableCell>
                 </TableRow>
-                
               ))}
 
-              {!loading && filteredCustomers.length === 0 && (
+              {!loading && !error && filteredCustomers.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6}>
+                  <TableCell colSpan={TABLE_HEADS.length}>
                     <Box sx={{ py: 4, textAlign: 'center' }}>
                       <Typography variant="body1" fontWeight={500}>
                         No customers found
@@ -243,7 +323,7 @@ const handleSave = (values) => {
                         color="text.secondary"
                         sx={{ mt: 0.5 }}
                       >
-                        Try adjusting your search or add a new customer.
+                        Try adjusting your search or click 'New Customer' to add one.
                       </Typography>
                     </Box>
                   </TableCell>
@@ -251,38 +331,18 @@ const handleSave = (values) => {
               )}
             </TableBody>
           </Table>
-        </Box>
+        </TableContainer>
 
-        {(loading || error) && (
-          <Box
-            sx={{
-              px: 2,
-              py: 1.5,
-              borderTop: (theme) => `1px solid ${theme.palette.divider}`,
-            }}
-          >
-            {loading && (
-              <Typography variant="body2" color="text.secondary">
-                Loading customers...
-              </Typography>
-            )}
-            {error && (
-              <Typography variant="body2" color="error">
-                {error}
-              </Typography>
-            )}
-          </Box>
-        )}
       </Paper>
 
-      {/* Add Customer Dialog */}
+      {/* Customer Form Dialog */}
       <CustomerFormDialog
-  open={dialogOpen}
-  onClose={() => setDialogOpen(false)}
-  onSubmit={handleSave}
-  initialValues={selectedCustomer}
-/>
-
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        onSubmit={handleSave}
+        initialValues={selectedCustomer}
+        isEditing={!!selectedCustomer} // Pass a prop to indicate edit mode
+      />
     </Box>
   );
 }
